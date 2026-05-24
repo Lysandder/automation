@@ -25,6 +25,7 @@ DECK_URL = os.getenv("DECK_URL")
 TRANSACTIONS_URL = os.getenv("ADS_URL")
 SHOJOS_URL = os.getenv("SHOJOS_URL")
 DATABASE_URL = os.getenv("DATABASE_URL")
+MINE_URL = os.getenv("MINE_URL")
 
 
 def print_cyan(text: str):
@@ -36,8 +37,8 @@ def print_red(text: str):
 
 
 # Check of env variables
-REQUIRED_ENV_VARS = ["PROFILE_URL", "LOGIN_URL", "EMAIL",
-                     "PASSWORD", "DECK_URL", "ADS_URL", "SHOJOS_URL", "DATABASE_URL"]
+REQUIRED_ENV_VARS = ["PROFILE_URL", "LOGIN_URL", "EMAIL", "PASSWORD",
+                     "DECK_URL", "ADS_URL", "SHOJOS_URL", "DATABASE_URL", "MINE_URL"]
 
 for key in REQUIRED_ENV_VARS:
     val = os.getenv(key)
@@ -51,7 +52,8 @@ def safe_goto(page, url, label=""):
     try:
         page.goto(url)
     except Exception as e:
-        print_red(f"[GOTO ERROR] title='{page.title()}' url='{page.url}': \n{e}")
+        print_red(
+            f"[GOTO ERROR] title='{page.title()}' url='{page.url}': \n{e}")
 
 
 def safe_click(page, selector, label=""):
@@ -244,7 +246,6 @@ def get_browser(p):
 
 @log_job
 def read_chapters():  # 4 with a delay 2.5-3.5 minutes
-    print_cyan("Reading chapters started")
     with sync_playwright() as p:
         browser = get_browser(p)
 
@@ -297,13 +298,10 @@ def read_chapters():  # 4 with a delay 2.5-3.5 minutes
         set_index(index + completed)
 
         browser.close()
-    print_cyan("Finished Reading chapters")
 
 
 @log_job
 def leave_comments():  # 10 with a delay 10-30 seconds
-
-    print_cyan("Leaving comments started")
     with sync_playwright() as p:
         browser = get_browser(p)
 
@@ -335,12 +333,10 @@ def leave_comments():  # 10 with a delay 10-30 seconds
                 ensure_logged_in(page)
 
         browser.close()
-    print_cyan("Finished Leaving comments")
 
 
 @log_job
 def watch_ads():
-    print_cyan("Watching ADS started")
     with sync_playwright() as p:
         browser = get_browser(p)
 
@@ -369,12 +365,10 @@ def watch_ads():
                 safe_goto(page, TRANSACTIONS_URL)
 
         browser.close()
-    print_cyan("Finished Watching ADS")
 
 
 @log_job
 def get_daily_calendar_gift():
-    print_cyan("Claiming Daily Calendar Gift")
     with sync_playwright() as p:
         browser = get_browser(p)
 
@@ -395,7 +389,57 @@ def get_daily_calendar_gift():
             print_red("Calendar Error - Maybe could not find the button")
 
         browser.close()
-    print_cyan("FINISHED Daily Calendar Gift")
+
+
+@log_job
+def mine():
+    with sync_playwright() as p:
+        browser = get_browser(p)
+
+        cleanup(browser)
+        page = browser.new_page()
+
+        ensure_logged_in(page)
+        print_cyan("Ensured login")
+
+        safe_goto(page, MINE_URL)
+        time.sleep(random.randint(3, 7))
+
+        try:
+            js_command = """() => new Promise((resolve) => {
+                function autoTap100() {
+                    const hitsLeftEl = document.querySelector('[id*="hits"], [class*="hits"]');
+                    const raw = hitsLeftEl ? hitsLeftEl.textContent.replace(/,/g, '') : '100';
+                    const total = parseInt(raw) || 100;
+                    let count = 0;
+                    const delay = 300;
+                    function sendHit() {
+                        if (count >= total) {
+                            console.log('Done! Sent ' + total + ' hits.');
+                            resolve(total);
+                            return;
+                        }
+                        $.post('/mine/hit', {}, function(res) {
+                            count++;
+                            console.log(`Hit ${count}/${total} — Ore: ${res.ore}, Hits left: ${res.hits_left}`);
+                            setTimeout(sendHit, delay);
+                        }).fail(function(err) {
+                            count++;
+                            const msg = err.responseJSON?.message || 'Unknown error';
+                            console.warn(`Hit ${count} failed: ${msg}`);
+                            setTimeout(sendHit, delay);
+                        });
+                    }
+                    sendHit();
+                }
+                autoTap100();
+            })"""
+            page.evaluate(js_command)
+        except Exception as e:
+            print_red("ERROR while mining")
+            print_red(str(e))
+
+        browser.close()
 
 
 # def scrape_names():
@@ -476,9 +520,10 @@ def get_daily_calendar_gift():
 # scheduling()
 # print_cyan("[STARTUP] Scheduler started. Flask starting...")
 
-leave_comments()
-watch_ads()
-get_daily_calendar_gift()
+# leave_comments()
+# watch_ads()
+# get_daily_calendar_gift()
+mine()
 
 # if __name__ == "__main__":
 port = int(os.environ.get("PORT", 3000))
