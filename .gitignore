@@ -1,2 +1,11 @@
 .venv
 .env
+chapters.txt
+index.txt
+names.txt
+response_log.txt
+temp.txt
+test.py
+test.txt
+__pycache__/
+.DS_Store
