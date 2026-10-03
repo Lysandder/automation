@@ -1,6 +1,7 @@
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 import asyncio
 from asyncio import to_thread
+from aiohttp import web
 import requests
 import main
 import bot
@@ -66,7 +67,25 @@ async def main_job():
     )
 
 
+async def health_check(request):
+    return web.Response(text="OK", status=200)
+
+
+async def uptime_check():
+    app = web.Application()
+    app.router.add_get("/health", health_check)
+    app.router.add_get("/", health_check)
+    
+    runner = web.AppRunner(app)
+    await runner.setup()
+    
+    site = web.TCPSite(runner, "0.0.0.0", 8080)
+    await site.start()
+
+
 async def main_module_func():
+    await uptime_check()
+
     scheduler = AsyncIOScheduler(timezone="Asia/Tashkent")
 
     scheduler.add_job(
