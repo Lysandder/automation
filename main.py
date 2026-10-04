@@ -250,8 +250,8 @@ def get_auth_session() -> requests.Session | None:
     })
 
     # fetching the csrp token
-    soup = BeautifulSoup(
-        sess.get(
+    try:
+        login_page = sess.get(
             url=info.LOGIN_URL,
             headers={
                 "Sec-Fetch-Dest": "document",
@@ -260,8 +260,15 @@ def get_auth_session() -> requests.Session | None:
                 "Sec-Fetch-User": "?1",
                 "Upgrade-Insecure-Requests": "1",
             }
-        ).text, "html.parser")
+        )
+        print(f"[AUTH DEBUG] Login Page Status Code: {login_page.status_code}")
+        print(f"[AUTH DEBUG] Login Page Preview:\n{login_page.text[:400]}")
+    except Exception as e:
+        print(f"[AUTH DEBUG] Exception fetching login page: {e}")
+        return None
+
     human_delay()
+    soup = BeautifulSoup(login_page.text, "html.parser")
 
     csrf_token = (
         soup.find("input", {"name": "_token"}) or
