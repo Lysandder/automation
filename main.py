@@ -229,6 +229,12 @@ def get_auth_session() -> requests.Session | None:
     print("Logging In")
     sess = requests.Session()
 
+    # proxy
+    sess.proxies.update({
+        "http": info.PROXY_URL,
+        "https": info.PROXY_URL
+    })
+
     retries = Retry(
         total=3,
         backoff_factor=1,

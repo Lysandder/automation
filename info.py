@@ -14,5 +14,6 @@ DATABASE_URL = os.environ["DATABASE_URL"]
 MINE_URL = os.environ["MINE_URL"]
 TG_BOT_TOKEN = os.environ["TG_BOT_TOKEN"]
 ADMIN_TG_USER = os.environ["ADMIN_TG_USER"]
+PROXY_URL = os.environ["PROXY_URL"]
 SHOJOS_URL = os.environ["SHOJOS_URL"]
 
