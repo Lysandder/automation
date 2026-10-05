@@ -143,13 +143,15 @@ def get_card_info(sess: requests.Session, card_id: int, card_name: str) -> dict 
             card_copy_number = item.get("data-copy-number")
             card_manga_name = item.get("data-manga-name")
             card_image = item.select_one("div.manga-cards__image").get("data-src")
+            card_action_id = item.select_one("div.card-actions").get("data-card-user-id")
 
             if card_copy_number and str(card_copy_number).isdigit():
                 card_dicts_list.append({
                     "rank": card_rank,
                     "copy_number": int(str(card_copy_number)),
                     "manga_name": card_manga_name,
-                    "card_image": card_image
+                    "card_image": card_image,
+                    "action_id": int(card_action_id),
                 })
         else:
             print("Error during getting information about each searched cards with the same id")
