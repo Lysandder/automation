@@ -121,6 +121,11 @@ def get_card_info(sess: requests.Session, card_id: int, card_name: str) -> dict 
     # Selecting all cards with that card id
     soup = BeautifulSoup(all_search_cards_html, "html.parser")
     wrappers = soup.select(f".manga-cards__item-wrapper:has(.manga-cards__item[data-card-id='{card_id}'])")
+    
+    if len(wrappers) == 0:
+        print(f"No cards by the name '{card_name}' were found")
+        return
+
     card_divs = [str(div) for div in wrappers]
 
     
@@ -200,7 +205,7 @@ def manage_responses(sess: requests.Session, response: requests.Response):
             print(f"{card_info['card_name']} - Read Chapters Card to cards_queue", end=' ')
             print("Successful" if postgresql_response else "Failed")
         else:
-            print("Error with getting additional_info")
+            print("Error with getting additional_info for chapter reading response")
             return
     # SCROLL
     # elif response_dict.get("scroll") is True:
