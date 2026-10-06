@@ -222,10 +222,18 @@ def manage_calendar_card(sess: requests.Session, response: str):
     card_info = get_card_notification(sess=sess)
     human_delay(8.4, 15.3)
     if card_info:
+        card_info["wishlist_page_count"] = get_wishlist_page_count(sess=sess, card_id=card_info["card_id"])
         additional_info = get_card_info(sess=sess, card_name=card_info["card_name"], card_id=card_info["card_id"])
         human_delay(8.4, 15.3)
-        card_info.update(additional_info) if additional_info else print("Error with getting additional_info for a calendar")
-        card_info["wishlist_page_count"] = get_wishlist_page_count(sess=sess, card_id=card_info["card_id"])
+        if additional_info:
+            card_info.update(additional_info)
+            postgresql_response = postgresql.add_card(**card_info)
+            print(f"{card_info['card_name']} - Calendar Card to cards_queue", end=' ')
+            print("Successful" if postgresql_response else "Failed")
+        else:
+            print("Error with getting additional_info for a calendar")
+            return
+
 
         postgresql_response = postgresql.add_card(**card_info)
         print(f"{card_info['card_name']} - Calendar Card to cards_queue", end=' ')
