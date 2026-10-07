@@ -282,10 +282,10 @@ def get_auth_session() -> requests.Session | None:
                 "Upgrade-Insecure-Requests": "1",
             }
         )
-        print(f"[AUTH DEBUG] Login Page Status Code: {login_page.status_code}")
-        print(f"[AUTH DEBUG] Login Page Preview:\n{login_page.text[:400]}")
+        # print(f"[AUTH DEBUG] Login Page Status Code: {login_page.status_code}")
+        # print(f"[AUTH DEBUG] Login Page Preview:\n{login_page.text[:400]}")
     except Exception as e:
-        print(f"[AUTH DEBUG] Exception fetching login page: {e}")
+        print(f"[AUTH ERROR] Exception fetching login page: {e}")
         return None
 
     human_delay()
