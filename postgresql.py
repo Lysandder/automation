@@ -32,12 +32,12 @@ def get_chapter_links(index: int) -> list:
         return [row[0] for row in cur.fetchall()]
 
 
-def add_card(card_name, rank, copy_number, manga_name, card_id, card_image, wishlist_page_count):
+def add_card(card_name, rank, copy_number, manga_name, card_id, card_image, wishlist_page_count, action_id):
     with psycopg2.connect(info.DATABASE_URL) as conn, conn.cursor() as cur:
         cur.execute("""
-            INSERT INTO cards_queue (name, rank, copy_number, manga_name, card_id, image, wishlist_page_count)
-            VALUES (%s, %s, %s, %s, %s, %s, %s)
-        """, (card_name, rank, copy_number, manga_name, card_id, card_image, wishlist_page_count))
+            INSERT INTO cards_queue (name, rank, copy_number, manga_name, card_id, image, wishlist_page_count, action_id)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+        """, (card_name, rank, copy_number, manga_name, card_id, card_image, wishlist_page_count, action_id))
 
         return cur.rowcount == 1
 
