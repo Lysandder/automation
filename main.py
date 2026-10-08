@@ -365,7 +365,7 @@ def claim_calendar_gift(sess: requests.Session) -> str | None:
             print("Claimed calendar gift")
             if "Card_" in reward:
                 manage_calendar_card(sess=sess, response=reward)
-            return reward # coins | scroll_g | card_g
+            return reward # Coins | Scroll_g | Card_g
         elif calendar_response_dict.get("message") == "Вы уже получали награду сегодня, приходите завтра":
             print("Already Claimed")
             return "Already Claimed"
