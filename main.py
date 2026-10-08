@@ -490,13 +490,15 @@ def mine(sess: requests.Session) -> dict | None:
     ores_made = ores_after - ores_before
 
     # converting ores to diamonds
-    # sess.post(
-    #     url=f"{info.MINE_URL}/exchange",
-    #     data={
-    #         "diamonds": ores_after // 100
-    #     },
-    #     headers=ajax_headers(referer_url=info.MINE_URL, content_type="application/x-www-form-urlencoded")
-    # )
+    sess.post(
+        url=f"{info.MINE_URL}/exchange",
+        data={
+            "diamonds": ores_after // 100
+        },
+        headers=ajax_headers(referer_url=info.MINE_URL, content_type="application/x-www-form-urlencoded")
+    )
+
+    print(f"Ores made today: {ores_made}")
 
     return {
         "ores_before": ores_before,
