@@ -623,11 +623,12 @@ def read_chapters(sess: requests.Session):
 
         manage_result = manage_responses(sess=sess, response=reading_response)
         if manage_result is False:
-            try:
-                loop = asyncio.get_running_loop()
-                loop.create_task(bot.error_message(text=f"No reward in chapter {links.index(link) + 1} / {len(links)}"))
-            except RuntimeError as e:
-                asyncio.run(bot.error_message(text=str(e)))
+            print(f"No reward in chapter {links.index(link) + 1} / {len(links)}")
+            # try:
+            #     loop = asyncio.get_running_loop()
+            #     loop.create_task(bot.error_message(text=f"No reward in chapter {links.index(link) + 1} / {len(links)}"))
+            # except RuntimeError as e:
+            #     asyncio.run(bot.error_message(text=str(e)))
         
         chapters_read += 1
 
