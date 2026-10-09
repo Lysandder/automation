@@ -423,7 +423,7 @@ def watch_ads(sess: requests.Session) -> dict | None:  # 3 times
     # print(f"diamonds per ad = {diamonds_per_ad}")
 
     gained_diamonds = 0
-    successfull_watches = 0
+    successful_watches = 0
     got_scroll = False
     for i in range(total_ads_count):
         human_delay(42.34, 56.08)
@@ -431,7 +431,7 @@ def watch_ads(sess: requests.Session) -> dict | None:  # 3 times
 
         ads_response_dict = ads_response.json()
         if ads_response_dict.get("success"):
-            successfull_watches += 1
+            successful_watches += 1
             gained_diamonds += diamonds_per_ad
             print(f"Watched AD number {i + 1} / {total_ads_count}")
         elif not ads_response_dict.get("success"):
@@ -439,15 +439,15 @@ def watch_ads(sess: requests.Session) -> dict | None:  # 3 times
             break
 
     # MAKE A DYNAMIC CHECKING from notifications
-    if successfull_watches == total_ads_count:
+    if successful_watches == total_ads_count:
         got_scroll = True
 
     return {
         "total_ads_count": total_ads_count,
         "diamonds_per_ad": diamonds_per_ad,
-        "successfull_watches": successfull_watches,
+        "successful_watches": successful_watches,
         "gained_diamonds": gained_diamonds,
-        "got_scroll": got_scroll
+        "got_scroll": got_scroll,
     }
 
 
