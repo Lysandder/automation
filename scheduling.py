@@ -47,6 +47,9 @@ async def main_job():
     if sess is None:
         sess = await to_thread(main.get_auth_session)
 
+    login_results = await to_thread(main.get_login_reward, sess)
+    await to_thread(main.human_delay, 12.4, 21.6)
+
     calendar_results = await to_thread(main.claim_calendar_gift, sess)
     await to_thread(main.human_delay, 12.4, 21.6)
 
@@ -63,8 +66,11 @@ async def main_job():
         calendar_results=calendar_results,
         ads_results=ads_results,
         mine_results=mine_results,
-        comments_results=comments_results
+        comments_results=comments_results,
+        login_results=login_results,
     )
+
+    await to_thread(print, "Finished the main job")
 
 
 async def health_check(request):

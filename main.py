@@ -235,9 +235,17 @@ def manage_calendar_card(sess: requests.Session, response: str):
             return
 
 
-        postgresql_response = postgresql.add_card(**card_info)
-        print(f"{card_info['card_name']} - Calendar Card to cards_queue", end=' ')
-        print("Successful" if postgresql_response else "Failed")
+def get_login_reward(sess: requests.Session) -> int:
+    print("Checking login reward")
+    transactions_page = sess.get(url=info.TRANSACTIONS_URL)
+    human_delay(10.3, 15.2)
+    transactions_page = sess.get(url=info.TRANSACTIONS_URL)
+    human_delay()
+    
+    soup = BeautifulSoup(transactions_page.text, "html.parser")
+    reward = int(soup.select_one("div.user-transactions__amount.user-transactions__amount--plus").text.replace('+', ''))
+    print(f"Checked login reward +{reward}")
+    return reward
 
 
 def get_auth_session() -> requests.Session | None:
