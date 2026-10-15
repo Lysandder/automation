@@ -239,8 +239,22 @@ async def process_card_action(action: str, general_id: int, db_id: int, callback
     else:
         await callback.answer(text="Failed to process card", show_alert=True)
 
-async def error_message(text: str):
-    await bot.send_message(chat_id=info.ADMIN_TG_USER, text=text, parse_mode=ParseMode.HTML)
+
+def error_message(text: str) -> bool:
+    url = f"https://api.telegram.org/bot{info.TG_BOT_TOKEN}/sendMessage"
+    response = requests.post(
+        url=url,
+        json={
+            "chat_id": info.ADMIN_TG_USER,
+            "text": text[:4000],  # Telegram limit is 4096 characters
+        },
+        timeout=30,
+    )
+
+    if not response.ok:
+        print("sendMessage failed:", response.status_code, response.text)
+        return False
+    return True
 
 
 # testing
