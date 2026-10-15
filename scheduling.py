@@ -132,7 +132,8 @@ async def main_module_func():
         )
 
     scheduler.start()
-    await asyncio.Event().wait()
+    await bot.dp.start_polling(bot.bot, handle_signals=False)
+    # await asyncio.Event().wait()
 
 
 if __name__ == "__main__":

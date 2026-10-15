@@ -347,6 +347,77 @@ def get_auth_session() -> requests.Session | None:
     return sess
 
 
+def lock_card(action_id):
+    import scheduling
+    sess = scheduling.get_session()
+    if sess is None:
+        sess = get_auth_session()
+    user_id = get_user_id(sess=sess)
+    lock_response = sess.post(
+        url=f"{info.ORIGIN}/trades/lockCard/{action_id}",
+        headers=ajax_headers(referer_url=f"{info.ORIGIN}/users/{user_id}/cards")
+    )
+    if lock_response.json().get("is_lock"):
+        return True
+    return False
+
+
+def unwant_card(card_id):
+    import scheduling
+    sess = scheduling.get_session()
+    if sess is None:
+        sess = get_auth_session()
+    user_id = get_user_id(sess=sess)
+    unwant_response = sess.post(
+        url=f"{info.ORIGIN}/cards/offers",
+        data={
+            "card_id": card_id,
+            "type": 1
+        },
+        headers=ajax_headers(referer_url=f"{info.ORIGIN}/users/{user_id}/cards")
+    )
+    if unwant_response.json().get("is_created"):
+        return True
+    return False
+
+
+def add_to_trade_deck(action_id):
+    import scheduling
+    sess = scheduling.get_session()
+    if sess is None:
+        sess = get_auth_session()
+    user_id = get_user_id(sess=sess)
+    add_to_trade_deck_response = sess.post(
+        url=f"{info.ORIGIN}/decks/{info.TRADE_DECK_ID}/addCard",
+        data={
+            "cardId": action_id
+        },
+        headers=ajax_headers(referer_url=f"{info.ORIGIN}/users/{user_id}/cards")
+    )
+    if add_to_trade_deck_response.json().get("is_added"):
+        return True
+    return False
+
+
+def manage_cards_queue():
+    if postgresql.is_active_card():
+        print("There is an active card already")
+        return None
+    pending_card = postgresql.get_pending_card_info()
+    if pending_card is None: # meaning no pending cards left
+        print("No pending cards left")
+        return None
+    postgresql_response = postgresql.set_card_state(state="active", id=pending_card["id"])
+    if not postgresql_response:
+        print("ERROR during setting a card active")
+        return
+    try:
+        loop = asyncio.get_running_loop()
+        asyncio.run_coroutine_threadsafe(bot.send_card_message(pending_card), loop)
+    except RuntimeError:
+        bot.send_card_message(pending_card)
+
+
 def claim_calendar_gift(sess: requests.Session) -> str | None:
     print("Claiming calendar gift")
     transactions_page = sess.get(url=info.TRANSACTIONS_URL)
@@ -643,6 +714,8 @@ def read_chapters(sess: requests.Session):
     if chapters_read != 0:
         postgresql.set_index(chapters_read=chapters_read)
 
+    manage_cards_queue()
+
 
 # def claim_chat_diamond(sess: requests.Session):
 #     print("Claiming chat diamond")
@@ -694,9 +767,10 @@ if __name__ == "__main__":
         # human_delay()
         # watch_ads(sess)
         # human_delay()
-        print(mine(sess))
+        # mine(sess)
         # human_delay()
         # leave_comments(sess)
         # human_delay()
         # read_chapters(sess) # don't forget about candies
+        # manage_cards_queue()
         

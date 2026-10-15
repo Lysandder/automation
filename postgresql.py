@@ -41,3 +41,46 @@ def add_card(card_name, rank, copy_number, manga_name, card_id, card_image, wish
 
         return cur.rowcount == 1
 
+
+def is_active_card() -> bool:
+    with psycopg2.connect(info.DATABASE_URL) as conn, conn.cursor() as cur:
+        cur.execute("SELECT EXISTS(SELECT 1 FROM cards_queue WHERE bot_state = %s)", ("active",))
+        result = cur.fetchone()
+        if result:
+            return result[0]
+        return False
+
+
+def get_pending_card_info():
+    with psycopg2.connect(info.DATABASE_URL) as conn, conn.cursor() as cur:
+        cur.execute("""
+            SELECT * FROM cards_queue
+            WHERE bot_state = %s
+            ORDER BY id
+            LIMIT 1
+        """, ("pending",))
+        result = cur.fetchone() # tuple
+        if result is None: # means no pending cards
+            return None
+        # cur.description is tuple of Column's, Column[0] is "name" of the column
+        column_names = [column[0] for column in cur.description]
+        card_dict = dict(zip(column_names, result))
+        return card_dict
+
+
+def set_card_state(state, id):
+    with psycopg2.connect(info.DATABASE_URL) as conn, conn.cursor() as cur:
+        cur.execute("""
+            UPDATE cards_queue
+            SET bot_state = %s
+            WHERE id = %s
+        """, (state, id))
+        return cur.rowcount > 0
+
+
+# testing
+if __name__ == "__main__":
+    index = get_index()
+    print(index)
+    print(get_chapter_links(index=index))
+
