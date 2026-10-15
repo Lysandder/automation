@@ -10,26 +10,17 @@ sess = main.get_auth_session()
 main.human_delay()
 
 
-def check_session(sess: requests.Session) -> requests.Session | None:
-    user_id = main.get_user_id(sess)
-    if user_id is None:
-        new_sess = main.get_auth_session()
-        main.human_delay()
-        if new_sess is None:
-            print("Error during authentication for scheduler")
-            return
-        return new_sess
-    return sess
-
-
 def get_session():
     global sess
-    new_sess = check_session(sess)
+    if sess is not None and main.get_user_id(sess=sess) is not None:
+        return sess
+    new_sess = main.get_auth_session()
     if new_sess is None:
-        print(f"Error during session checking")
+        print(f"Authentication failed, scheduling->get_session")
         return
-    sess = new_sess
-    return sess
+    main.human_delay()
+    globals()["sess"] = new_sess
+    return new_sess 
 
 
 # def job_wrapper(function):
@@ -42,33 +33,47 @@ def get_session():
 #     return function(sess)
 
 
+async def run_main_job_func(func, *args):
+    try:
+        return await to_thread(func, *args)
+    except Exception as e:
+        print(f"ERROR during main job {func.__name__},\n{e}")
+        return None
+
+
 async def main_job():
-    sess = await to_thread(get_session)
+    sess = await run_main_job_func(get_session)
     if sess is None:
-        sess = await to_thread(main.get_auth_session)
+        sess = await run_main_job_func(main.get_auth_session)
+        if sess is None:
+            print("Some kind of stupid errors during authentication, scheduling->main_job")
+            return
 
-    login_results = await to_thread(main.get_login_reward, sess)
+    login_results = await run_main_job_func(main.get_login_reward, sess)
     await to_thread(main.human_delay, 12.4, 21.6)
 
-    calendar_results = await to_thread(main.claim_calendar_gift, sess)
+    calendar_results = await run_main_job_func(main.claim_calendar_gift, sess)
     await to_thread(main.human_delay, 12.4, 21.6)
 
-    ads_results = await to_thread(main.watch_ads, sess)
+    ads_results = await run_main_job_func(main.watch_ads, sess)
     await to_thread(main.human_delay, 12.4, 21.6)
 
-    mine_results = await to_thread(main.mine, sess)
+    mine_results = await run_main_job_func(main.mine, sess)
     await to_thread(main.human_delay, 12.4, 21.6)
 
-    comments_results = await to_thread(main.leave_comments, sess)
+    comments_results = await run_main_job_func(main.leave_comments, sess)
     await to_thread(main.human_delay, 12.4, 21.6)
 
-    await bot.main_job_message(
-        calendar_results=calendar_results,
-        ads_results=ads_results,
-        mine_results=mine_results,
-        comments_results=comments_results,
-        login_results=login_results,
-    )
+    try:
+        await bot.main_job_message(
+            calendar_results=calendar_results,
+            ads_results=ads_results,
+            mine_results=mine_results,
+            comments_results=comments_results,
+            login_results=login_results,
+        )
+    except Exception as e:
+        print(f"Failed main job, {e}")
 
     await to_thread(print, "Finished the main job")
 
