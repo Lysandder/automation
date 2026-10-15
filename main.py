@@ -671,48 +671,60 @@ def read_chapters(sess: requests.Session):
         return
 
     index = postgresql.get_index()
-    links = postgresql.get_chapter_links(index)
     chapters_read = 0
+    successful_reads = 0
+    rewards = 0
 
-    for link in links:
-        current_chapter_page = sess.get(url=link)
-        human_delay()
-        current_chapter_json = re.search(r'window\.current_chapter\s*=\s*(\{.*?\});', current_chapter_page.text)
-        if current_chapter_json is None:
-            return
-
-        chapter_data = json.loads(current_chapter_json.group(1))
-        manga_id = str(chapter_data["id"])
-        chapter_id = str(chapter_data["chapter_id"])
-
-        reading_response = sess.post(
-            url=f"{info.ORIGIN}/addHistory?r=702",
-            data={
-                "items[0][manga_id]": manga_id,
-                "items[0][chapter_id]": chapter_id,
-            },
-            headers=ajax_headers(referer_url=link)
-        )
-
-        print(f"Read chapter {links.index(link) + 1} / {len(links)}")
-        if link != links[-1]:
-            human_delay(150.3, 202.43) # not working sometimes, just checking if caused by waiting time
-        else:
+    try:
+        while rewards < 2:
+            # if chapters_read >= 10:
+            #     bot.error_message("10 chapter links didn't work in a row")
+            #     print("10 chapter links didn't work in a row")
+            #     return
+            link = postgresql.get_chapter_link(index + chapters_read)
+            current_chapter_page = sess.get(url=link)
+            print(f"LINK {link} STATUS CODE {current_chapter_page.status_code}")
+            human_delay(4.3, 8.6)
+            if current_chapter_page.status_code == 404:
+                print(f"NOT FOUND: {link}")
+                chapters_read += 1
+                continue
             human_delay()
+            current_chapter_json = re.search(r'window\.current_chapter\s*=\s*(\{.*?\});', current_chapter_page.text)
+            if current_chapter_json is None:
+                print(f"None: {link}")
+                chapters_read += 1
+                continue
 
-        manage_result = manage_responses(sess=sess, response=reading_response)
-        if manage_result is False:
-            print(f"No reward in chapter {links.index(link) + 1} / {len(links)}")
-            # try:
-            #     loop = asyncio.get_running_loop()
-            #     loop.create_task(bot.error_message(text=f"No reward in chapter {links.index(link) + 1} / {len(links)}"))
-            # except RuntimeError as e:
-            #     asyncio.run(bot.error_message(text=str(e)))
-        
-        chapters_read += 1
+            chapter_data = json.loads(current_chapter_json.group(1))
+            manga_id = str(chapter_data["id"])
+            chapter_id = str(chapter_data["chapter_id"])
 
-    if chapters_read != 0:
+            reading_response = sess.post(
+                url=f"{info.ORIGIN}/addHistory?r=702",
+                data={
+                    "items[0][manga_id]": manga_id,
+                    "items[0][chapter_id]": chapter_id,
+                },
+                headers=ajax_headers(referer_url=link)
+            )
+            chapters_read += 1
+            successful_reads += 1
+            human_delay(12.4, 16.3)
+            manage_result = manage_responses(sess=sess, response=reading_response)
+            if manage_result is False:
+                print(f"No reward in chapter {successful_reads}")
+            else:
+                print(f"Read chapter with reward {successful_reads}")
+                rewards += 1
+     
+            human_delay(12.4, 16.3)
+            if rewards < 2:
+                human_delay(150.3, 202.43)
+    finally:
         postgresql.set_index(chapters_read=chapters_read)
+
+    print(f"Total chapters read+skipped: {chapters_read}")
 
     manage_cards_queue()
 

@@ -23,13 +23,19 @@ def set_index(chapters_read: int = total_chapters_to_read):
         cur.execute("UPDATE state SET value = %s WHERE key = %s;", (new_index, "index"))
 
 
-def get_chapter_links(index: int) -> list:
+# def get_chapter_links(index: int) -> list:
+#     with psycopg2.connect(info.DATABASE_URL) as conn, conn.cursor() as cur:
+#         cur.execute(
+#             "SELECT link FROM chapters WHERE id >= %s ORDER BY id ASC LIMIT %s;", 
+#             (index, total_chapters_to_read)
+#         )
+#         return [row[0] for row in cur.fetchall()]
+
+
+def get_chapter_link(index: int) -> str:
     with psycopg2.connect(info.DATABASE_URL) as conn, conn.cursor() as cur:
-        cur.execute(
-            "SELECT link FROM chapters WHERE id >= %s ORDER BY id ASC LIMIT %s;", 
-            (index, total_chapters_to_read)
-        )
-        return [row[0] for row in cur.fetchall()]
+        cur.execute("SELECT link FROM chapters WHERE id = %s;", (index,))
+        return cur.fetchone()[0]
 
 
 def add_card(card_name, rank, copy_number, manga_name, card_id, card_image, wishlist_page_count, action_id):
