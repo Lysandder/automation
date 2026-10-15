@@ -125,7 +125,7 @@ async def main_module_func():
         h = start_min // 60
         m = start_min % 60
         times.append((h, m))
-        start_min += 75
+        start_min += 90
 
     for h, m in times:
         scheduler.add_job(
@@ -143,3 +143,4 @@ async def main_module_func():
 
 if __name__ == "__main__":
     asyncio.run(main_module_func())
+
