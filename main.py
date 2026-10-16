@@ -438,7 +438,7 @@ def claim_calendar_gift(sess: requests.Session) -> str | None:
         day = active_card["data-day"]
         human_delay()
         calendar_response = sess.post(url=f"{info.TRANSACTIONS_URL}/claim/{day}", headers=ajax_headers(referer_url=info.TRANSACTIONS_URL))
-        print(f"TEST Calendar Response: {calendar_response.text}")
+        # print(f"TEST Calendar Response: {calendar_response.text}")
         calendar_response_dict = calendar_response.json()
         if calendar_response_dict.get("message") == "Вы успешно забрали награду, приходите завтра":
             print(reward)
@@ -500,7 +500,7 @@ def watch_ads(sess: requests.Session) -> dict | None:  # 3 times
     for i in range(total_ads_count):
         human_delay(42.34, 56.08)
         ads_response = sess.post(url=f"{info.TRANSACTIONS_URL}/ads", headers=ajax_headers(referer_url=info.TRANSACTIONS_URL))
-        print(f"TEST ADs Response: {ads_response.text}")
+        # print(f"TEST ADs Response: {ads_response.text}")
 
         ads_response_dict = ads_response.json()
         if ads_response_dict.get("success"):
@@ -554,7 +554,7 @@ def mine(sess: requests.Session) -> dict | None:
 
     for i in range(hits_left):
         mine_response = sess.post(url=f"{info.MINE_URL}/hit", headers=ajax_headers(referer_url=info.MINE_URL))
-        print(f"TEST Mine Response: {mine_response.text}")
+        # print(f"TEST Mine Response: {mine_response.text}")
         print(f"Mine Hit Number {i + 1} / {hits_left}")
 
         mine_response_dict = mine_response.json()
@@ -627,7 +627,7 @@ def leave_comments(sess: requests.Session) -> dict | None:
             },
             headers=ajax_headers(referer_url=info.DECK_URL)
         )
-        print(f"TEST Comments Response: {comments_response.text}")
+        # print(f"TEST Comments Response: {comments_response.text}")
 
         print(f"Left comment number {i + 1} / {comments_left}")
 
@@ -716,7 +716,7 @@ def read_chapters(sess: requests.Session):
                 },
                 headers=ajax_headers(referer_url=link)
             )
-            print(f"TEST Reading Response: {reading_response.text}")
+            # print(f"TEST Reading Response: {reading_response.text}")
             chapters_read += 1
             successful_reads += 1
             human_delay(12.4, 16.3)
