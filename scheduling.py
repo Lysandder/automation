@@ -5,9 +5,11 @@ from aiohttp import web
 import requests
 import main
 import bot
+import datetime
 
 sess = main.get_auth_session()
 main.human_delay()
+scheduler = AsyncIOScheduler(timezone="Asia/Tashkent")
 
 
 def get_session():
@@ -31,6 +33,20 @@ def get_session():
 #         return
 #     sess = new_sess
 #     return function(sess)
+
+
+def schedule_read(minutes):
+    run_at = datetime.datetime.now(scheduler.timezone) + datetime.timedelta(minutes=minutes)
+    if run_at.hour >= 22:
+        print("Past 22:00, stopping chapter reads for today")
+        return
+    scheduler.add_job(
+        func=read_chapters_job,
+        trigger="date",
+        run_date=run_at,
+        id="read_chapters",
+        replace_existing=True
+    )
 
 
 async def run_main_job_func(func, *args):
@@ -77,6 +93,7 @@ async def main_job():
 
     await to_thread(print, "Finished the main job")
 
+    schedule_read(10)
 
 async def health_check(request):
     return web.Response(text="OK", status=200)
@@ -98,51 +115,36 @@ async def read_chapters_job():
     sess = await run_main_job_func(get_session)
     if sess is None:
         sess = await run_main_job_func(main.get_auth_session)
-        if sess is None:
-            print("Some kind of stupid errors during authentication, scheduling->read_chapters_job")
-            return
-    await run_main_job_func(main.read_chapters, sess)
+    if sess is None:
+        print("Some kind of stupid errors during authentication, scheduling->read_chapters_job")
+        print("Rescheduling reading to 30 minutes later")
+        schedule_read(30)
+        return
+    reading_result = await run_main_job_func(main.read_chapters, sess)
+    if reading_result is None:
+        print("main.read_chapters returned None, will reschedule to 30 minutes later")
+        schedule_read(30)
+        return
+    if reading_result["got_today"] < reading_result["available_today"]:
+        schedule_read(90)
+    else:
+        await to_thread(print, "Got all cards for today")
 
 
 async def main_module_func():
     await uptime_check()
 
-    scheduler = AsyncIOScheduler(timezone="Asia/Tashkent")
-
     scheduler.add_job(
         func=main_job,
         trigger="cron",
-        hour=8,
-        minute=20
+        hour=7,
+        minute=30
     )
 
-
-    # Scheduling 10 chapter reads
-
-    scheduler.add_job(
-        func=read_chapters_job,
-        trigger="cron",
-        hour=8,
-        minute=40,
-    )
-
-
-    # times = []
-    # start_min = 6 * 60 # 06:00 AM in minutes from midnight
-    #
-    # for _ in range(10):
-    #     h = start_min // 60
-    #     m = start_min % 60
-    #     times.append((h, m))
-    #     start_min += 90
-    #
-    # for h, m in times:
-    #     scheduler.add_job(
-    #         func=read_chapters_job,
-    #         trigger="cron",
-    #         hour=h,
-    #         minute=m,
-    #     )
+    now = datetime.datetime.now(scheduler.timezone)
+    if now.time() >= datetime.time(7, 30):
+        print("Started after 07:30, starting chapter reads")
+        schedule_read(1)
 
     scheduler.start()
     await bot.dp.start_polling(bot.bot, handle_signals=False)
