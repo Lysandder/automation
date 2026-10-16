@@ -691,7 +691,7 @@ def read_chapters(sess: requests.Session):
             #     return
             link = postgresql.get_chapter_link(index + chapters_read)
             current_chapter_page = sess.get(url=link)
-            print(f"LINK {link} STATUS CODE {current_chapter_page.status_code}")
+            # print(f"LINK {link} STATUS CODE {current_chapter_page.status_code}")
             human_delay(4.3, 8.6)
             if current_chapter_page.status_code == 404:
                 print(f"NOT FOUND: {link}")
