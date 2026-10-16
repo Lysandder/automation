@@ -733,6 +733,11 @@ def read_chapters(sess: requests.Session):
 
     manage_cards_queue()
 
+    return {
+        "got_today": number_read + 1,
+        "available_today": number_total,
+    }
+
 
 # def claim_chat_diamond(sess: requests.Session):
 #     print("Claiming chat diamond")
