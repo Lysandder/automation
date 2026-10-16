@@ -94,6 +94,16 @@ async def uptime_check():
     await site.start()
 
 
+async def read_chapters_job():
+    sess = await run_main_job_func(get_session)
+    if sess is None:
+        sess = await run_main_job_func(main.get_auth_session)
+        if sess is None:
+            print("Some kind of stupid errors during authentication, scheduling->read_chapters_job")
+            return
+    await run_main_job_func(main.read_chapters, sess)
+
+
 async def main_module_func():
     await uptime_check()
 
@@ -129,11 +139,10 @@ async def main_module_func():
 
     for h, m in times:
         scheduler.add_job(
-            func=to_thread,
+            func=read_chapters_job,
             trigger="cron",
             hour=h,
             minute=m,
-            args=[main.read_chapters, sess]
         )
 
     scheduler.start()
