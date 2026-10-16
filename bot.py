@@ -36,10 +36,7 @@ async def main_job_message(calendar_results, ads_results, mine_results, comments
         if comments_results and comments_results.get("total_candies", 0) > 0:
             any_candies = True
         
-        if ads_results["successful_watches"] == ads_results["total_ads_count"]:
-            ads_text = "✔️"
-        else:
-            ads_text = f"✔️ {ads_results['successful_watches']}/{ads_results['total_ads_count']}"
+        ads_text = f"✔️ {ads_results['successful_watches']}/{ads_results['total_ads_count']}"
 
         total_gained_diamonds += ads_results["gained_diamonds"]
         if any_candies:
@@ -54,10 +51,7 @@ async def main_job_message(calendar_results, ads_results, mine_results, comments
     # Comments
     comments_text = "None"
     if comments_results is not None:
-        if comments_results["successful_comments"] == comments_results["total_comments"]:
-            comments_text = "✔️"
-        else:
-            comments_text = f"✔️ {comments_results['successful_comments']}/{comments_results['comments_left']}/{comments_results['total_comments']}"
+        comments_text = f"✔️ {comments_results['successful_comments']}/{comments_results['comments_left']}/{comments_results['total_comments']}"
         total_gained_diamonds += comments_results["total_diamonds"]
         total_gained_candies += comments_results["total_candies"]
 
@@ -96,7 +90,7 @@ async def main_job_message(calendar_results, ads_results, mine_results, comments
                         #     {"text": "RESULT", "entities": [{"type": "italic", "offset": 0, "length": 6}]}
                         # ],
                         # Rows 2+: Data cells
-                        [{"text": "Login"}, {"text": "✔️"}],
+                        [{"text": "Login"}, {"text": f"✔️ +{login_results}"}],
                         [{"text": "Calendar"}, {"text": calendar_text}],
                         [{"text": "ADs"}, {"text": ads_text}],
                         [{"text": "Mine"}, {"text": mine_text}],
