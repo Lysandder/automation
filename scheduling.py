@@ -113,7 +113,7 @@ async def main_module_func():
         func=main_job,
         trigger="cron",
         hour=8,
-        minute=15
+        minute=20
     )
 
 
@@ -123,7 +123,7 @@ async def main_module_func():
         func=read_chapters_job,
         trigger="cron",
         hour=8,
-        minute=35,
+        minute=40,
     )
 
 
