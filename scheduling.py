@@ -112,38 +112,37 @@ async def main_module_func():
     scheduler.add_job(
         func=main_job,
         trigger="cron",
-        hour=5,
-        minute=30
+        hour=8,
+        minute=15
     )
 
 
     # Scheduling 10 chapter reads
+
+    scheduler.add_job(
+        func=read_chapters_job,
+        trigger="cron",
+        hour=8,
+        minute=35,
+    )
+
+
+    # times = []
+    # start_min = 6 * 60 # 06:00 AM in minutes from midnight
     #
-    # scheduler.add_job(
-    #     func=to_thread,
-    #     trigger="cron",
-    #     hour=9,
-    #     minute=41,
-    #     args=[main.read_chapters, sess]
-    # )
-
-
-    times = []
-    start_min = 6 * 60 # 06:00 AM in minutes from midnight
-
-    for _ in range(10):
-        h = start_min // 60
-        m = start_min % 60
-        times.append((h, m))
-        start_min += 90
-
-    for h, m in times:
-        scheduler.add_job(
-            func=read_chapters_job,
-            trigger="cron",
-            hour=h,
-            minute=m,
-        )
+    # for _ in range(10):
+    #     h = start_min // 60
+    #     m = start_min % 60
+    #     times.append((h, m))
+    #     start_min += 90
+    #
+    # for h, m in times:
+    #     scheduler.add_job(
+    #         func=read_chapters_job,
+    #         trigger="cron",
+    #         hour=h,
+    #         minute=m,
+    #     )
 
     scheduler.start()
     await bot.dp.start_polling(bot.bot, handle_signals=False)
