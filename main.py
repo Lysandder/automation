@@ -672,7 +672,11 @@ def read_chapters(sess: requests.Session):
     number_read, number_total = [int(n) for n in re.findall(r'\d+', text)]
     if number_read >= number_total:
         print("Done for today")
-        return
+        return {
+            "was_reloading": True,
+            "got_today": number_read,
+            "available_today": number_total,
+        }
 
     index = postgresql.get_index()
     chapters_read = 0
@@ -734,6 +738,7 @@ def read_chapters(sess: requests.Session):
     manage_cards_queue()
 
     return {
+        "was_reloading": False,
         "got_today": number_read + 1,
         "available_today": number_total,
     }
