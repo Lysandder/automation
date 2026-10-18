@@ -208,12 +208,13 @@ def manage_responses(sess: requests.Session, response: requests.Response):
             print("Successful" if postgresql_response else "Failed")
         else:
             print("Error with getting additional_info for chapter reading response")
-            return
+        return "card"
+
     # SCROLL
-    # elif response_dict.get("scroll") is True:
-    #     scroll_rank: str = response_dict["rank"]
-    #     is_scroll_blessed: bool = bool(response_dict["is_blessed"])
-    return True
+    elif response_dict.get("scroll") is True:
+        # scroll_rank: str = response_dict["rank"]
+        # is_scroll_blessed: bool = bool(response_dict["is_blessed"])
+        return "scroll"
 
 
 # for calendar card
@@ -676,19 +677,23 @@ def read_chapters(sess: requests.Session):
             "was_reloading": True,
             "got_today": number_read,
             "available_today": number_total,
+            "got_card": False,
+            "got_scroll": False,
         }
 
     index = postgresql.get_index()
     chapters_read = 0
     successful_reads = 0
-    rewards = 0
+    got_card = got_scroll = False
 
     try:
-        while rewards < 2:
-            # if chapters_read >= 10:
-            #     bot.error_message("10 chapter links didn't work in a row")
-            #     print("10 chapter links didn't work in a row")
-            #     return
+        while not (got_card and got_scroll):
+            if chapters_read >= 5 and got_card and (not got_scroll):
+                print("Read 5 chapters, no scroll")
+                break 
+            if chapters_read >= 10:
+                print("Read 10 chapters, didn't receive both yet")
+                break
             link = postgresql.get_chapter_link(index + chapters_read)
             current_chapter_page = sess.get(url=link)
             # print(f"LINK {link} STATUS CODE {current_chapter_page.status_code}")
@@ -725,10 +730,13 @@ def read_chapters(sess: requests.Session):
                 print(f"No reward in chapter {successful_reads}")
             else:
                 print(f"Read chapter with reward {successful_reads}")
-                rewards += 1
-     
+                if manage_result == "card":
+                    got_card = True
+                elif manage_result == "scroll":
+                    got_scroll = True
+                    
             human_delay(12.4, 16.3)
-            if rewards < 2:
+            if not got_card or not got_scroll:
                 human_delay(150.3, 202.43)
     finally:
         postgresql.set_index(chapters_read=chapters_read)
@@ -741,6 +749,8 @@ def read_chapters(sess: requests.Session):
         "was_reloading": False,
         "got_today": number_read + 1,
         "available_today": number_total,
+        "got_card": got_card,
+        "got_scroll": got_scroll,
     }
 
 
