@@ -117,16 +117,20 @@ async def read_chapters_job():
         sess = await run_main_job_func(main.get_auth_session)
     if sess is None:
         print("Some kind of stupid errors during authentication, scheduling->read_chapters_job")
-        print("Rescheduling reading to 30 minutes later")
         schedule_read(30)
+        print("Rescheduled reading to 30 minutes later")
         return
     reading_result = await run_main_job_func(main.read_chapters, sess)
     if reading_result is None:
-        print("main.read_chapters returned None, will reschedule to 30 minutes later")
+        print("main.read_chapters returned None")
         schedule_read(30)
+        print("Rescheduled reading to 30 minutes later")
         return
     if reading_result["got_today"] < reading_result["available_today"]:
+        if reading_result["was_reloading"]:
+            print("Reloading")
         schedule_read(90)
+        print("Rescheduled reading to 90 minutes later")
     else:
         await to_thread(print, "Got all cards for today")
 
