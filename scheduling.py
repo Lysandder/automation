@@ -152,7 +152,7 @@ async def main_module_func():
     now = datetime.datetime.now(scheduler.timezone)
     if now.time() >= datetime.time(7, 30):
         print("Started after 07:30, starting chapter reads")
-        schedule_read(1)
+        await main_job()
 
     scheduler.start()
     await bot.dp.start_polling(bot.bot, handle_signals=False)
