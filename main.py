@@ -19,6 +19,17 @@ def human_delay(min_sec: float = 2.0, max_sec: float = 6.0):
     time.sleep(random.uniform(min_sec, max_sec))
 
 
+def sync_csrf_token(sess: requests.Session) -> bool:
+    main_page = sess.get(url=info.ORIGIN)
+    soup = BeautifulSoup(main_page.text, "html.parser")
+    csrf_meta = soup.find("meta", {"name": "csrf-token"})
+    csrf_token = csrf_meta.get("content") if csrf_meta else None
+    if not csrf_token:
+        return False
+    sess.headers["X-CSRF-TOKEN"] = str(csrf_token)
+    return True
+
+
 def ajax_headers(referer_url: str, origin_url: str | None = None, content_type: str | None = None) -> dict:
     headers = {
         "Referer": referer_url,

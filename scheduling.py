@@ -14,7 +14,11 @@ scheduler = AsyncIOScheduler(timezone="Asia/Tashkent")
 
 def get_session():
     global sess
-    if sess is not None and main.get_user_id(sess=sess) is not None:
+    if (
+        sess is not None 
+        and main.get_user_id(sess=sess) is not None
+        and main.sync_csrf_token(sess)
+    ):
         return sess
     new_sess = main.get_auth_session()
     if new_sess is None:
