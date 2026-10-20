@@ -98,6 +98,7 @@ async def main_job():
     await to_thread(print, "Finished the main job")
 
     schedule_read(10)
+    print("Scheduled reading in 10 minutes")
 
 async def health_check(request):
     return web.Response(text="OK", status=200)
@@ -130,12 +131,11 @@ async def read_chapters_job():
         schedule_read(30)
         print("Rescheduled reading to 30 minutes later")
         return
-    if reading_result["got_today"] < reading_result["available_today"]:
-        if reading_result["was_reloading"]:
-            print("Reloading")
+    elif reading_result.get("reloading"):
+        print("Reloading")
         schedule_read(90)
         print("Rescheduled reading to 90 minutes later")
-    else:
+    elif reading_result.get("done_today"):
         await to_thread(print, "Got all cards for today")
 
 

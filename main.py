@@ -195,7 +195,7 @@ def get_wishlist_page_count(sess: requests.Session, card_id: int) -> int:
 
 
 # for reading chapters
-def manage_responses(sess: requests.Session, response: requests.Response):
+def manage_responses(sess: requests.Session, response: requests.Response, chapter_link: str):
     try:
         response_dict = response.json()
     except (json.JSONDecodeError, ValueError):
@@ -226,6 +226,23 @@ def manage_responses(sess: requests.Session, response: requests.Response):
         # scroll_rank: str = response_dict["rank"]
         # is_scroll_blessed: bool = bool(response_dict["is_blessed"])
         return "scroll"
+
+    # CANDY
+    elif response_dict.get("type") == "candy":
+        token = response_dict["token"]
+        candy_response = sess.post(
+            url=f"{info.ORIGIN}/halloween/takeCandy?r=822",
+            data={
+                "token": token,
+            },
+            headers=ajax_headers(referer_url=chapter_link)
+        )
+        human_delay(65.3, 72.3)
+        if candy_response.status_code != 200:
+            print("Failed to get a candy")
+        else:
+            print("Successfully got a candy")
+        return "candy"
 
 
 # for calendar card
@@ -677,7 +694,9 @@ def read_chapters(sess: requests.Session):
 
     if soup.select_one(".wallet-panel__drop-state.wallet-panel__drop-state--wait"):
         print("Reloading")
-        return
+        return {
+            "reloading": True,
+        }
 
     text_div = soup.select_one(".wallet-panel__drop-text")
     text = text_div.text
@@ -685,11 +704,7 @@ def read_chapters(sess: requests.Session):
     if number_read >= number_total:
         print("Done for today")
         return {
-            "was_reloading": True,
-            "got_today": number_read,
-            "available_today": number_total,
-            "got_card": False,
-            "got_scroll": False,
+            "done_today": True,
         }
 
     index = postgresql.get_index()
@@ -736,7 +751,7 @@ def read_chapters(sess: requests.Session):
             chapters_read += 1
             successful_reads += 1
             human_delay(12.4, 16.3)
-            manage_result = manage_responses(sess=sess, response=reading_response)
+            manage_result = manage_responses(sess=sess, response=reading_response, chapter_link=link)
             if manage_result is False:
                 print(f"No reward in chapter {successful_reads}")
             else:
@@ -757,7 +772,6 @@ def read_chapters(sess: requests.Session):
     manage_cards_queue()
 
     return {
-        "was_reloading": False,
         "got_today": number_read + 1,
         "available_today": number_total,
         "got_card": got_card,
