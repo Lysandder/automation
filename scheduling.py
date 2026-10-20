@@ -39,13 +39,14 @@ def get_session():
 #     return function(sess)
 
 
-def schedule_read(minutes):
+def schedule_read(minutes: int, any_candies: bool = False):
     run_at = datetime.datetime.now(scheduler.timezone) + datetime.timedelta(minutes=minutes)
     if run_at.hour >= 22:
         print("Past 22:00, stopping chapter reads for today")
         return
     scheduler.add_job(
         func=read_chapters_job,
+        args=[any_candies],
         trigger="date",
         run_date=run_at,
         id="read_chapters",
@@ -95,9 +96,10 @@ async def main_job():
     except Exception as e:
         print(f"Failed main job, {e}")
 
+    any_candies = True if comments_results and (comments_results.get("total_candies", 0) > 0) else False
     await to_thread(print, "Finished the main job")
 
-    schedule_read(10)
+    schedule_read(minutes=10, any_candies=any_candies)
     print("Scheduled reading in 10 minutes")
 
 async def health_check(request):
@@ -116,27 +118,26 @@ async def uptime_check():
     await site.start()
 
 
-async def read_chapters_job():
+async def read_chapters_job(any_candies: bool = False):
     sess = await run_main_job_func(get_session)
     if sess is None:
         sess = await run_main_job_func(main.get_auth_session)
     if sess is None:
         print("Some kind of stupid errors during authentication, scheduling->read_chapters_job")
-        schedule_read(30)
-        print("Rescheduled reading to 30 minutes later")
+        schedule_read(minutes=10, any_candies=any_candies)
+        print("Rescheduled reading to 10 minutes later")
         return
-    reading_result = await run_main_job_func(main.read_chapters, sess)
+    reading_result = await run_main_job_func(main.read_chapters, sess, any_candies)
     if reading_result is None:
         print("main.read_chapters returned None")
-        schedule_read(30)
-        print("Rescheduled reading to 30 minutes later")
+        schedule_read(minutes=10, any_candies=any_candies)
+        print("Rescheduled reading to 10 minutes later")
         return
-    elif reading_result.get("reloading"):
-        print("Reloading")
-        schedule_read(90)
-        print("Rescheduled reading to 90 minutes later")
-    elif reading_result.get("done_today"):
+    elif reading_result.get("done"):
         await to_thread(print, "Got all cards for today")
+    else:
+        schedule_read(minutes=75, any_candies=any_candies)
+        print("Scheduled reading in 75 minutes")
 
 
 async def main_module_func():

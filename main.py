@@ -443,6 +443,7 @@ def manage_cards_queue():
     try:
         loop = asyncio.get_running_loop()
         asyncio.run_coroutine_threadsafe(bot.send_card_message(pending_card), loop)
+        # bot.send_card_message(card_info_dict=pending_card)
     except RuntimeError:
         bot.send_card_message(pending_card)
 
@@ -687,95 +688,100 @@ def leave_comments(sess: requests.Session) -> dict | None:
     }
 
 
-def read_chapters(sess: requests.Session):
+def read_chapters(sess: requests.Session, any_candies: bool = False):
     print("Reading chapters")
-    transactions_page = sess.get(url=info.TRANSACTIONS_URL)
-    soup = BeautifulSoup(transactions_page.text, "html.parser")
 
-    if soup.select_one(".wallet-panel__drop-state.wallet-panel__drop-state--wait"):
-        print("Reloading")
-        return {
-            "reloading": True,
-        }
-
-    text_div = soup.select_one(".wallet-panel__drop-text")
-    text = text_div.text
-    number_read, number_total = [int(n) for n in re.findall(r'\d+', text)]
-    if number_read >= number_total:
-        print("Done for today")
-        return {
-            "done_today": True,
-        }
-
-    index = postgresql.get_index()
     chapters_read = 0
     successful_reads = 0
-    got_card = got_scroll = False
+    got_scroll = False
 
-    try:
-        while not (got_card and got_scroll):
-            if chapters_read >= 5 and got_card and (not got_scroll):
-                print("Read 5 chapters, no scroll")
-                break 
-            if chapters_read >= 10:
-                print("Read 10 chapters, didn't receive both yet")
-                break
-            link = postgresql.get_chapter_link(index + chapters_read)
-            current_chapter_page = sess.get(url=link)
-            # print(f"LINK {link} STATUS CODE {current_chapter_page.status_code}")
-            human_delay(4.3, 8.6)
-            if current_chapter_page.status_code == 404:
-                print(f"NOT FOUND: {link}")
-                chapters_read += 1
-                continue
+    candies_left = True
+    cards_left = True
+
+    while True:
+        if any_candies:
+            available_candies = True
+            event_page = sess.get(url=f"{info.ORIGIN}/event/pack")
             human_delay()
-            current_chapter_json = re.search(r'window\.current_chapter\s*=\s*(\{.*?\});', current_chapter_page.text)
-            if current_chapter_json is None:
-                print(f"None: {link}")
-                chapters_read += 1
-                continue
+            event_soup = BeautifulSoup(event_page.text, "html.parser")
+            encountered_today = int(event_soup.select_one("div.event-page__stat-value:not(.js-event-balance)").text)
+            if encountered_today < 35:
+                available_candies = False
+        else:
+            available_candies = False
 
-            chapter_data = json.loads(current_chapter_json.group(1))
-            manga_id = str(chapter_data["id"])
-            chapter_id = str(chapter_data["chapter_id"])
+        available_cards = True
+        transactions_page = sess.get(url=info.TRANSACTIONS_URL)
+        human_delay()
+        soup = BeautifulSoup(transactions_page.text, "html.parser")
+        if soup.select_one(".wallet-panel__drop-state.wallet-panel__drop-state--wait"):
+            print("Card (& scroll) Reloading")
+            available_cards = False
+        text_div = soup.select_one(".wallet-panel__drop-text")
+        text = text_div.text
+        number_read, number_total = [int(n) for n in re.findall(r'\d+', text)]
+        if number_read >= number_total:
+            print("Collected all cards today")
+            available_cards = False
+            if not available_candies:
+                return {"done": True}
 
-            reading_response = sess.post(
-                url=f"{info.ORIGIN}/addHistory?r=702",
-                data={
-                    "items[0][manga_id]": manga_id,
-                    "items[0][chapter_id]": chapter_id,
-                },
-                headers=ajax_headers(referer_url=link)
-            )
-            # print(f"TEST Reading Response: {reading_response.text}")
+        if any_candies and (not available_candies) and (not available_cards):
+            break
+        elif (not available_candies) and (not available_cards) and got_scroll:
+            break
+        elif (not available_candies) and (not available_cards) and (chapters_read >= 5):
+            break
+
+        index = postgresql.get_index()
+        link = postgresql.get_chapter_link(index + chapters_read)
+        current_chapter_page = sess.get(url=link)
+        # print(f"LINK {link} STATUS CODE {current_chapter_page.status_code}")
+        human_delay(4.3, 8.6)
+        if current_chapter_page.status_code == 404:
+            print(f"NOT FOUND: {link}")
             chapters_read += 1
-            successful_reads += 1
-            human_delay(12.4, 16.3)
-            manage_result = manage_responses(sess=sess, response=reading_response, chapter_link=link)
-            if manage_result is False:
-                print(f"No reward in chapter {successful_reads}")
-            else:
-                print(f"Read chapter with reward {successful_reads}")
-                if manage_result == "card":
-                    got_card = True
-                elif manage_result == "scroll":
-                    got_scroll = True
-                    
-            human_delay(12.4, 16.3)
-            if not got_card or not got_scroll:
-                human_delay(150.3, 202.43)
-    finally:
-        postgresql.set_index(chapters_read=chapters_read)
+            postgresql.set_index(chapters_read=1)
+            continue
+        current_chapter_json = re.search(r'window\.current_chapter\s*=\s*(\{.*?\});', current_chapter_page.text)
+        if current_chapter_json is None:
+            print(f"None: {link}")
+            chapters_read += 1
+            postgresql.set_index(chapters_read=1)
+            continue
+
+        chapter_data = json.loads(current_chapter_json.group(1))
+        manga_id = str(chapter_data["id"])
+        chapter_id = str(chapter_data["chapter_id"])
+
+        reading_response = sess.post(
+            url=f"{info.ORIGIN}/addHistory?r=702",
+            data={
+                "items[0][manga_id]": manga_id,
+                "items[0][chapter_id]": chapter_id,
+            },
+            headers=ajax_headers(referer_url=link)
+        )
+        # print(f"TEST Reading Response: {reading_response.text}")
+        chapters_read += 1
+        successful_reads += 1
+        manage_result = manage_responses(sess=sess, response=reading_response, chapter_link=link)
+        if manage_result is False:
+            print(f"No reward in chapter {successful_reads}")
+        else:
+            print(f"Read chapter with reward {successful_reads}")
+            if manage_result == "scroll":
+                got_scroll = True
+                
+        postgresql.set_index(chapters_read=1)
+        human_delay(270.2, 330.43)
 
     print(f"Total chapters read+skipped: {chapters_read}")
 
     manage_cards_queue()
 
     return {
-        "got_today": number_read + 1,
-        "available_today": number_total,
-        "got_card": got_card,
-        "got_scroll": got_scroll,
+        "done": False,
     }
 
 
