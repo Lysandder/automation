@@ -699,13 +699,16 @@ def read_chapters(sess: requests.Session, any_candies: bool = False):
     cards_left = True
 
     while True:
+        print(f"Any candies: {any_candies}")
         if any_candies:
             available_candies = True
             event_page = sess.get(url=f"{info.ORIGIN}/event/pack")
             human_delay()
             event_soup = BeautifulSoup(event_page.text, "html.parser")
             encountered_today = int(event_soup.select_one("div.event-page__stat-value:not(.js-event-balance)").text)
+            print(f"Got {encountered_today} candies today")
             if encountered_today >= 35:
+                print("Already 35")
                 available_candies = False
         else:
             available_candies = False
