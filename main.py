@@ -705,7 +705,7 @@ def read_chapters(sess: requests.Session, any_candies: bool = False):
             human_delay()
             event_soup = BeautifulSoup(event_page.text, "html.parser")
             encountered_today = int(event_soup.select_one("div.event-page__stat-value:not(.js-event-balance)").text)
-            if encountered_today < 35:
+            if encountered_today >= 35:
                 available_candies = False
         else:
             available_candies = False
