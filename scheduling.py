@@ -96,7 +96,8 @@ async def main_job():
     except Exception as e:
         print(f"Failed main job, {e}")
 
-    any_candies = True if comments_results and (comments_results.get("total_candies", 0) > 0) else False
+    # any_candies = True if comments_results and (comments_results.get("total_candies", 0) > 0) else False
+    any_candies = True
     await to_thread(print, "Finished the main job")
 
     schedule_read(minutes=10, any_candies=any_candies)
